@@ -1,0 +1,45 @@
+{% extends "unfold/layouts/unauthenticated.html" %}
+{% load i18n unfold %}
+
+{% block title %}{{ title }} | {{ site_title|default:_("Cargo System") }}{% endblock %}
+
+{% block content %}
+    {% include "unfold/helpers/unauthenticated_title.html" with title=site_title|default:_("Cargo System") subtitle=status_label %}
+
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="material-symbols-outlined text-3xl text-primary-600 dark:text-primary-500">{{ icon }}</span>
+            <h2 class="font-semibold text-xl tracking-tight text-font-important-light dark:text-font-important-dark">
+                {{ title }}
+            </h2>
+        </div>
+        <p class="leading-relaxed text-font-default-light dark:text-font-default-dark">
+            {{ message }}
+        </p>
+        {% block error_extra %}{% endblock %}
+    </div>
+
+    <div class="flex flex-col gap-3">
+        {% url primary_url as home_url %}
+        {% component "unfold/components/button.html" with href=home_url|default:"/admin/" variant="primary" class="w-full" %}
+            {{ primary_label }}
+            <span class="material-symbols-outlined relative right-0 transition-all group-hover:-right-1 text-sm">arrow_forward</span>
+        {% endcomponent %}
+
+        {% if user.is_authenticated %}
+            {% url "admin:logout" as logout_url %}
+            {% if logout_url %}
+                {% component "unfold/components/button.html" with href=logout_url variant="secondary" class="w-full" %}
+                    {% trans "Se déconnecter" %}
+                {% endcomponent %}
+            {% endif %}
+        {% else %}
+            {% url "admin:login" as login_url %}
+            {% if login_url %}
+                {% component "unfold/components/button.html" with href=login_url variant="secondary" class="w-full" %}
+                    {% trans "Se connecter" %}
+                {% endcomponent %}
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}

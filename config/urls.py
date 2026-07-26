@@ -9,5 +9,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 ]
 
+handler403 = "apps.core.error_views.handler403"
+handler404 = "apps.core.error_views.handler404"
+handler500 = "apps.core.error_views.handler500"
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
