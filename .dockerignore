@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.github/
+.env
+*.md
+.cursor/
+postgres_data/
+media/
+staticfiles/
+.pytest_cache/
+htmlcov/
+.mypy_cache/
+docs/

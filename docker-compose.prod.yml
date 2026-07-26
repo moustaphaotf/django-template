@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  web:
+    image: ${DOCKER_IMAGE:-your-dockerhub-user/cargo-system:latest}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_DEBUG: "false"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    # Pas de ports: publiés — Traefik atteint web:8000 via le réseau proxy.
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK:-proxy}
+      - traefik.http.routers.${TRAEFIK_ROUTER:-cargo-system}.rule=Host(`${TRAEFIK_HOST:-cargo.example.com}`)
+      - traefik.http.routers.${TRAEFIK_ROUTER:-cargo-system}.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.${TRAEFIK_ROUTER:-cargo-system}.tls=true
+      - traefik.http.routers.${TRAEFIK_ROUTER:-cargo-system}.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.services.${TRAEFIK_ROUTER:-cargo-system}.loadbalancer.server.port=8000
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:
+    driver: bridge
+  proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK:-proxy}
