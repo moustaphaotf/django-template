@@ -87,6 +87,19 @@ En production, les variables suivantes sont indispensables :
 - `TRAEFIK_HOST`
 - `TRAEFIK_NETWORK`
 
+### Alertes Telegram (erreurs 500)
+
+Un middleware remonte automatiquement les erreurs serveur sur Telegram. Pour l'activer (ou réutiliser le même modèle sur une autre app), configurer :
+
+| Variable | Description |
+| -------- | ----------- |
+| `APP_NAME` | Nom de l'application affiché dans chaque alerte (ex. `Cargo System`) |
+| `TELEGRAM_BOT_TOKEN` | Token du bot Telegram (via [@BotFather](https://t.me/BotFather)) |
+| `TELEGRAM_CHAT_ID` | ID du chat / canal qui reçoit les alertes |
+| `TELEGRAM_NOTIFY_ENABLED` | `true` / `false` (défaut : `true` si token + chat_id sont présents) |
+
+Chaque notification inclut le nom de l'app, un horodatage clair, la requête, l'exception, et l'email de l'utilisateur authentifié lorsqu'il est disponible.
+
 ---
 
 ## Stockage des médias
