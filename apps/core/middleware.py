@@ -1,25 +1,25 @@
-"""Middleware de notification Telegram pour les erreurs serveur (5xx)."""
+"""Middleware de notification pour les erreurs serveur (5xx)."""
 
 from __future__ import annotations
 
 import logging
 
-from apps.core.telegram import notify_server_error
+from apps.core.notifications import notify_server_error
 
 logger = logging.getLogger(__name__)
 
-_NOTIFIED_ATTR = "_telegram_500_notified"
+_NOTIFIED_ATTR = "_error_500_notified"
 
 
-class TelegramErrorNotificationMiddleware:
-    """Intercepte les erreurs 500 et les remonte sur Telegram.
+class ErrorNotificationMiddleware:
+    """Intercepte les erreurs 500 et les remonte via le webhook configuré.
 
     - ``process_exception`` : exceptions non gérées levées par une vue
     - ``process_response`` : réponses HTTP 5xx sans exception (évite les doublons)
 
     La configuration se fait uniquement via les variables d'environnement
-    ``APP_NAME``, ``TELEGRAM_BOT_TOKEN``, ``TELEGRAM_CHAT_ID`` (et optionnellement
-    ``TELEGRAM_NOTIFY_ENABLED``), pour réutiliser le même modèle sur d'autres apps.
+    ``APP_NAME`` et ``DISCORD_WEBHOOK_URL``, pour réutiliser le même modèle
+    sur d'autres apps. Sans URL, aucune alerte n'est envoyée.
     """
 
     def __init__(self, get_response):
@@ -49,6 +49,6 @@ class TelegramErrorNotificationMiddleware:
         except Exception:
             # Ne jamais faire échouer la requête à cause d'une alerte.
             logger.exception(
-                "Impossible d'envoyer la notification Telegram pour une erreur %s",
+                "Impossible d'envoyer la notification pour une erreur %s",
                 status_code,
             )

@@ -40,18 +40,14 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Après AuthenticationMiddleware pour accéder à request.user.email
-    "apps.core.middleware.TelegramErrorNotificationMiddleware",
+    "apps.core.middleware.ErrorNotificationMiddleware",
 ]
 
 # Identifiant d'application (réutilisable sur d'autres projets via env)
 APP_NAME = os.environ.get("APP_NAME", "Cargo System")
 
-# Alertes Telegram pour les erreurs 500
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
-TELEGRAM_NOTIFY_ENABLED = os.environ.get(
-    "TELEGRAM_NOTIFY_ENABLED", "true"
-).lower() in ("1", "true", "yes")
+# Alertes webhook (Discord) pour les erreurs 500 — actif dès qu'une URL est définie
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
 ROOT_URLCONF = "config.urls"
 

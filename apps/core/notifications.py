@@ -1,4 +1,4 @@
-"""Client minimal pour remonter les erreurs 500 via Telegram Bot API."""
+"""Client générique pour remonter les erreurs serveur via webhook Discord."""
 
 from __future__ import annotations
 
@@ -7,22 +7,20 @@ import logging
 import traceback
 import urllib.error
 import urllib.request
-from html import escape
+
 from django.conf import settings
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-TELEGRAM_MAX_MESSAGE_LENGTH = 4096
 TRACEBACK_MAX_LENGTH = 2500
+EMBED_DESCRIPTION_MAX = 4096
+DISCORD_RED = 15548997  # #ED4245
 
 
-def is_telegram_configured() -> bool:
-    if not getattr(settings, "TELEGRAM_NOTIFY_ENABLED", True):
-        return False
-    token = getattr(settings, "TELEGRAM_BOT_TOKEN", "") or ""
-    chat_id = getattr(settings, "TELEGRAM_CHAT_ID", "") or ""
-    return bool(token.strip() and str(chat_id).strip())
+def is_notification_configured() -> bool:
+    webhook_url = getattr(settings, "DISCORD_WEBHOOK_URL", "") or ""
+    return bool(str(webhook_url).strip())
 
 
 def _app_name() -> str:
@@ -63,52 +61,63 @@ def _format_traceback(exception: BaseException | None) -> str:
     return tb
 
 
-def build_error_message(
+def _truncate(text: str, max_length: int) -> str:
+    if len(text) <= max_length:
+        return text
+    return text[: max_length - 20] + "\n… [tronqué]"
+
+
+def build_error_payload(
     request,
     *,
     exception: BaseException | None = None,
     status_code: int = 500,
-) -> str:
-    """Construit le message Telegram HTML pour une erreur serveur."""
+) -> dict:
+    """Construit le payload d'alerte (embed Discord) pour une erreur serveur."""
     method = getattr(request, "method", "?")
     path = getattr(request, "get_full_path", lambda: getattr(request, "path", "?"))()
-    lines = [
-        f"🚨 <b>Erreur {status_code}</b> — {_app_name()}",
-        "",
-        f"📅 <b>Horodatage :</b> {escape(_format_timestamp())}",
-        f"👤 <b>Utilisateur :</b> {escape(_user_email(request))}",
-        f"🔗 <b>Requête :</b> <code>{escape(f'{method} {path}')}</code>",
-        f"💥 <b>Erreur :</b> <code>{escape(_exception_summary(exception))}</code>",
-    ]
+    description = "\n".join(
+        [
+            f"**Horodatage :** {_format_timestamp()}",
+            f"**Utilisateur :** {_user_email(request)}",
+            f"**Requête :** `{method} {path}`",
+            f"**Erreur :** `{_exception_summary(exception)}`",
+        ]
+    )
+    description = _truncate(description, EMBED_DESCRIPTION_MAX)
+
+    embed: dict = {
+        "title": f"Erreur {status_code} — {_app_name()}",
+        "color": DISCORD_RED,
+        "description": description,
+    }
     tb = _format_traceback(exception)
     if tb:
-        lines.extend(["", "<b>Traceback :</b>", f"<pre>{escape(tb)}</pre>"])
+        embed["fields"] = [
+            {
+                "name": "Traceback",
+                "value": f"```{_truncate(tb, 1000)}```",
+                "inline": False,
+            }
+        ]
 
-    message = "\n".join(lines)
-    if len(message) > TELEGRAM_MAX_MESSAGE_LENGTH:
-        message = message[: TELEGRAM_MAX_MESSAGE_LENGTH - 20] + "\n… [tronqué]"
-    return message
+    return {
+        "username": _app_name()[:80],
+        "allowed_mentions": {"parse": []},
+        "embeds": [embed],
+    }
 
 
-def send_telegram_message(text: str) -> bool:
-    """Envoie un message au chat configuré. Ne lève jamais d'exception."""
-    if not is_telegram_configured():
+def send_notification(payload: dict) -> bool:
+    """Poste le payload JSON sur le webhook configuré. Ne lève jamais d'exception."""
+    if not is_notification_configured():
         return False
 
-    token = settings.TELEGRAM_BOT_TOKEN.strip()
-    chat_id = str(settings.TELEGRAM_CHAT_ID).strip()
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = json.dumps(
-        {
-            "chat_id": chat_id,
-            "text": text,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True,
-        }
-    ).encode("utf-8")
+    url = str(settings.DISCORD_WEBHOOK_URL).strip()
+    body = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
         url,
-        data=payload,
+        data=body,
         headers={"Content-Type": "application/json"},
         method="POST",
     )
@@ -116,10 +125,10 @@ def send_telegram_message(text: str) -> bool:
         with urllib.request.urlopen(request, timeout=5) as response:
             return 200 <= response.status < 300
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as exc:
-        logger.warning("Échec d'envoi de la notification Telegram : %s", exc)
+        logger.warning("Échec d'envoi de la notification d'erreur : %s", exc)
         return False
     except Exception:
-        logger.exception("Erreur inattendue lors de l'envoi Telegram")
+        logger.exception("Erreur inattendue lors de l'envoi de la notification")
         return False
 
 
@@ -129,10 +138,10 @@ def notify_server_error(
     exception: BaseException | None = None,
     status_code: int = 500,
 ) -> bool:
-    """Formate et envoie une alerte d'erreur 500. Retourne True si envoyé."""
-    if not is_telegram_configured():
+    """Formate et envoie une alerte d'erreur serveur. Retourne True si envoyé."""
+    if not is_notification_configured():
         return False
-    message = build_error_message(
+    payload = build_error_payload(
         request, exception=exception, status_code=status_code
     )
-    return send_telegram_message(message)
+    return send_notification(payload)
