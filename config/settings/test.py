@@ -1,7 +1,7 @@
 from .base import *  # noqa: F403
 
 DEBUG = False
-TELEGRAM_NOTIFY_ENABLED = False
+ERROR_NOTIFY_ENABLED = False
 
 DATABASES = {
     "default": {
