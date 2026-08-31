@@ -19,8 +19,6 @@ DISCORD_RED = 15548997  # #ED4245
 
 
 def is_notification_configured() -> bool:
-    if not getattr(settings, "ERROR_NOTIFY_ENABLED", True):
-        return False
     webhook_url = getattr(settings, "DISCORD_WEBHOOK_URL", "") or ""
     return bool(str(webhook_url).strip())
 

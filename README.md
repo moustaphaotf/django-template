@@ -94,8 +94,7 @@ Un middleware remonte automatiquement les erreurs serveur (5xx) via un webhook D
 | Variable | Description |
 | -------- | ----------- |
 | `APP_NAME` | Nom de l'application affiché dans chaque alerte (ex. `Cargo System`) |
-| `DISCORD_WEBHOOK_URL` | URL du webhook Discord (Canal → Paramètres → Intégrations → Webhooks) |
-| `ERROR_NOTIFY_ENABLED` | `true` / `false` (défaut : `true` ; rien n'est envoyé sans URL de webhook) |
+| `DISCORD_WEBHOOK_URL` | URL du webhook Discord (Canal → Paramètres → Intégrations → Webhooks). Laisser vide pour désactiver. |
 
 Chaque notification inclut le nom de l'app, un horodatage clair, la requête, l'exception, et l'email de l'utilisateur authentifié lorsqu'il est disponible.
 

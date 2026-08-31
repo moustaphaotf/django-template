@@ -1,7 +1,7 @@
 from .base import *  # noqa: F403
 
 DEBUG = False
-ERROR_NOTIFY_ENABLED = False
+DISCORD_WEBHOOK_URL = ""
 
 DATABASES = {
     "default": {

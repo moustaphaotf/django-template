@@ -46,11 +46,8 @@ MIDDLEWARE = [
 # Identifiant d'application (réutilisable sur d'autres projets via env)
 APP_NAME = os.environ.get("APP_NAME", "Cargo System")
 
-# Alertes webhook (Discord) pour les erreurs 500
+# Alertes webhook (Discord) pour les erreurs 500 — actif dès qu'une URL est définie
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
-ERROR_NOTIFY_ENABLED = os.environ.get(
-    "ERROR_NOTIFY_ENABLED", "true"
-).lower() in ("1", "true", "yes")
 
 ROOT_URLCONF = "config.urls"
 

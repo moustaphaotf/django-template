@@ -37,7 +37,6 @@ urlpatterns = [
 @override_settings(
     APP_NAME="Cargo System",
     DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/123/abc",
-    ERROR_NOTIFY_ENABLED=True,
     TIME_ZONE="UTC",
     USE_TZ=True,
 )
@@ -50,10 +49,6 @@ class ErrorPayloadBuilderTests(SimpleTestCase):
 
     @override_settings(DISCORD_WEBHOOK_URL="")
     def test_not_configured_without_webhook(self):
-        self.assertFalse(is_notification_configured())
-
-    @override_settings(ERROR_NOTIFY_ENABLED=False)
-    def test_disabled_via_flag(self):
         self.assertFalse(is_notification_configured())
 
     def test_payload_includes_app_name_timestamp_and_anonymous(self):
@@ -113,7 +108,6 @@ class ErrorPayloadBuilderTests(SimpleTestCase):
 
 @override_settings(
     DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/999/token",
-    ERROR_NOTIFY_ENABLED=True,
 )
 class NotificationSendTests(SimpleTestCase):
     @patch("apps.core.notifications.urllib.request.urlopen")
@@ -137,9 +131,9 @@ class NotificationSendTests(SimpleTestCase):
     def test_send_swallows_network_errors(self, _mock_urlopen):
         self.assertFalse(send_notification({"content": "hello"}))
 
-    @override_settings(ERROR_NOTIFY_ENABLED=False)
+    @override_settings(DISCORD_WEBHOOK_URL="")
     @patch("apps.core.notifications.send_notification")
-    def test_notify_noop_when_disabled(self, mock_send):
+    def test_notify_noop_without_webhook(self, mock_send):
         request = RequestFactory().get("/")
         request.user = AnonymousUser()
         self.assertFalse(notify_server_error(request, exception=RuntimeError("x")))
@@ -155,7 +149,6 @@ class NotificationSendTests(SimpleTestCase):
     ],
     APP_NAME="Cargo System",
     DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1/test",
-    ERROR_NOTIFY_ENABLED=True,
     DEBUG=False,
 )
 class ErrorNotificationMiddlewareIntegrationTests(TestCase):

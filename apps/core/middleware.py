@@ -18,8 +18,8 @@ class ErrorNotificationMiddleware:
     - ``process_response`` : réponses HTTP 5xx sans exception (évite les doublons)
 
     La configuration se fait uniquement via les variables d'environnement
-    ``APP_NAME``, ``DISCORD_WEBHOOK_URL`` (et optionnellement
-    ``ERROR_NOTIFY_ENABLED``), pour réutiliser le même modèle sur d'autres apps.
+    ``APP_NAME`` et ``DISCORD_WEBHOOK_URL``, pour réutiliser le même modèle
+    sur d'autres apps. Sans URL, aucune alerte n'est envoyée.
     """
 
     def __init__(self, get_response):
