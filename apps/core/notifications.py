@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 TRACEBACK_MAX_LENGTH = 2500
 EMBED_DESCRIPTION_MAX = 4096
 DISCORD_RED = 15548997  # #ED4245
+# Discord/Cloudflare refuse le User-Agent par défaut de urllib (Python-urllib/x.y).
+USER_AGENT = "DiscordBot (https://github.com/moustaphaotf/django-template, 1.0)"
 
 
 def is_notification_configured() -> bool:
@@ -118,13 +120,23 @@ def send_notification(payload: dict) -> bool:
     request = urllib.request.Request(
         url,
         data=body,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": USER_AGENT,
+        },
         method="POST",
     )
     try:
         with urllib.request.urlopen(request, timeout=5) as response:
             return 200 <= response.status < 300
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as exc:
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")[:500]
+        logger.warning(
+            "Échec d'envoi de la notification d'erreur : %s %s", exc, detail
+        )
+        return False
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
         logger.warning("Échec d'envoi de la notification d'erreur : %s", exc)
         return False
     except Exception:

@@ -1,5 +1,7 @@
 from datetime import datetime, timezone as dt_timezone
+from io import BytesIO
 from unittest.mock import MagicMock, patch
+import urllib.error
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpResponse, HttpResponseServerError
@@ -126,9 +128,22 @@ class NotificationSendTests(SimpleTestCase):
         )
         self.assertEqual(request.get_method(), "POST")
         self.assertEqual(request.get_header("Content-type"), "application/json")
+        self.assertIn("DiscordBot", request.get_header("User-agent"))
 
     @patch("apps.core.notifications.urllib.request.urlopen", side_effect=TimeoutError)
     def test_send_swallows_network_errors(self, _mock_urlopen):
+        self.assertFalse(send_notification({"content": "hello"}))
+
+    @patch("apps.core.notifications.urllib.request.urlopen")
+    def test_send_swallows_http_errors(self, mock_urlopen):
+        error = urllib.error.HTTPError(
+            url="https://discord.com/api/webhooks/999/token",
+            code=403,
+            msg="Forbidden",
+            hdrs=None,
+            fp=BytesIO(b'{"message": "error"}'),
+        )
+        mock_urlopen.side_effect = error
         self.assertFalse(send_notification({"content": "hello"}))
 
     @override_settings(DISCORD_WEBHOOK_URL="")
